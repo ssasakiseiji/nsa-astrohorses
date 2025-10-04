@@ -16,8 +16,7 @@ st.markdown("---")
 
 # Sección de bienvenida
 st.markdown("""
-Bienvenido al **Workbench de IA para Exoplanetas**. Esta plataforma te permite utilizar modelos de Machine Learning
-de última generación y construir los tuyos propios para ayudar en la búsqueda de nuevos mundos.
+Bienvenido al **Workbench de IA para Exoplanetas**. Esta plataforma te permite utilizar modelos de Machine Learning y configurar otros con hiperparámetros personalizados para ayudar en la búsqueda de nuevos mundos.
 """)
 
 st.markdown("")  # Espaciado
@@ -27,7 +26,7 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.metric(
         label="🎯 Precisión del Modelo",
-        value="~90%",
+        value="89,7%",
         delta="Pre-entrenado",
         help="Modelo Random Forest optimizado"
     )
@@ -36,13 +35,13 @@ with col2:
         label="🛰️ Misiones Soportadas",
         value="3",
         delta="Kepler, K2, TESS",
-        help="Tres misiones espaciales principales"
+        help="Tres misiones de telescopios espaciales"
     )
 with col3:
     st.metric(
         label="⚙️ Algoritmos Disponibles",
-        value="2+",
-        delta="RF & LightGBM",
+        value="2",
+        delta="Random Forest+F & LightGBM",
         help="Random Forest y LightGBM para entrenamiento"
     )
 
@@ -57,21 +56,21 @@ with col1:
     with st.container():
         st.markdown("#### 🪐 Predictor")
         st.markdown("""
-        Utiliza nuestro modelo pre-entrenado con **~90% de precisión** para clasificar objetos de interés.
+        Utiliza nuestro modelo pre-entrenado con **89,7% de precisión** para clasificar objetos de interés.
 
         **Características:**
         - Clasificación en tiempo real
         - Soporte para 3 misiones espaciales
         - Parámetros personalizables
-        - Análisis de confianza detallado
+        - Análisis de predicción detallado
         """)
-        st.info("👈 Selecciona 'Predictor' en la barra lateral para comenzar", icon="🪐")
+        st.info("Selecciona 'Predictor' en la barra lateral para comenzar", icon="🪐")
 
 with col2:
     with st.container():
         st.markdown("#### ⚙️ Model Workshop")
         st.markdown("""
-        ¡Conviértete en científico de datos! Entrena y evalúa tus propios modelos de clasificación.
+        Entrena y evalúa tus propios modelos de clasificación.
 
         **Características:**
         - Ajuste de hiperparámetros en tiempo real
@@ -79,7 +78,7 @@ with col2:
         - Métricas de rendimiento detalladas
         - Visualizaciones interactivas
         """)
-        st.info("👈 Selecciona 'Model Workshop' en la barra lateral", icon="⚙️")
+        st.info("Selecciona 'Model Workshop' en la barra lateral", icon="⚙️")
 
 st.markdown("---")
 
