@@ -1,0 +1,17 @@
+[theme]
+# Tema oscuro personalizado para Exoplanet AI Workbench
+primaryColor = "#6366f1"  # Indigo vibrante para elementos principales
+backgroundColor = "#0f172a"  # Azul oscuro profundo (slate-900)
+secondaryBackgroundColor = "#1e293b"  # Azul oscuro medio (slate-800)
+textColor = "#f1f5f9"  # Texto claro (slate-100)
+font = "sans serif"
+
+[server]
+# Configuración del servidor
+headless = true
+enableXsrfProtection = true
+enableCORS = false
+
+[browser]
+# Configuración del navegador
+gatherUsageStats = false
