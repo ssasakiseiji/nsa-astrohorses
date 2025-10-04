@@ -1,0 +1,21 @@
+[
+  {
+    "name": "Mi Modelo Personalizado",
+    "algorithm": "RandomForest",
+    "params": {
+      "n_estimators": 100,
+      "max_depth": 10
+    },
+    "accuracy": 0.8869957404159359,
+    "avg_precision": 0.8932026663172865,
+    "avg_recall": 0.8869957404159359,
+    "avg_f1": 0.8864017976217085,
+    "timestamp": "20251004_174643",
+    "model_file": "Mi_Modelo_Personalizado_20251004_174643",
+    "classes": [
+      "CANDIDATE",
+      "CONFIRMED",
+      "FALSE POSITIVE"
+    ]
+  }
+]
