@@ -4,7 +4,7 @@ from sidebar_config import setup_sidebar
 
 st.set_page_config(
     page_title="PlanetHunter",
-    page_icon="",
+    page_icon=":material/public:",  # Icono de planeta/globo de Material Symbols
     layout="wide",
     initial_sidebar_state="expanded"
 )

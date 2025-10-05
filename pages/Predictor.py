@@ -13,7 +13,7 @@ import sys
 sys.path.append('..')
 from sidebar_config import setup_sidebar
 
-st.set_page_config(page_title="Predictor de Exoplanetas", page_icon="", layout="wide")
+st.set_page_config(page_title="Predictor de Exoplanetas", page_icon=":material/public:", layout="wide")
 
 # Configurar sidebar consistente
 setup_sidebar()
