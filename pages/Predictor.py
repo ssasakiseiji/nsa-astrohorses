@@ -3,12 +3,19 @@ import pandas as pd
 import numpy as np
 import joblib
 from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, classification_report
 import plotly.graph_objects as go
 import plotly.express as px
 import json
 import os
 
-st.set_page_config(page_title="Predictor de Exoplanetas", page_icon="🪐", layout="wide")
+st.set_page_config(page_title="Predictor de Exoplanetas", page_icon="", layout="wide")
+
+# Cargar Font Awesome
+st.markdown("""
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+""", unsafe_allow_html=True)
 
 # --- Funciones de Carga (Caché para eficiencia) ---
 @st.cache_resource
@@ -63,6 +70,34 @@ def get_available_models():
 
     return models
 
+@st.cache_data
+def get_default_model_metrics():
+    """Carga las métricas del modelo predeterminado desde el archivo JSON."""
+    try:
+        with open('artifacts/default_model_index.json', 'r') as f:
+            default_model_data = json.load(f)
+
+        # Obtener el primer (y único) modelo del archivo
+        model_info = default_model_data[0]
+        metrics = model_info['evaluation_metrics']
+
+        return {
+            'algorithm': model_info.get('algorithm', 'Random Forest'),
+            'accuracy': metrics.get('accuracy', 0),
+            'avg_precision': metrics.get('avg_precision', 0),
+            'avg_recall': metrics.get('avg_recall', 0),
+            'avg_f1': metrics.get('avg_f1', 0)
+        }
+    except Exception as e:
+        # En caso de error, retornar valores por defecto
+        return {
+            'algorithm': 'RandomForestClassifier',
+            'accuracy': 0.897,
+            'avg_precision': 0.901,
+            'avg_recall': 0.897,
+            'avg_f1': 0.897
+        }
+
 def prepare_input_data(params, model_columns, imputation_values):
     """Prepara los datos de entrada para predicción"""
     input_data = {}
@@ -85,7 +120,7 @@ def prepare_input_data(params, model_columns, imputation_values):
     return pd.DataFrame([input_data])[model_columns]
 
 # --- Interfaz de Usuario ---
-st.title("🪐 Módulo de Predicción")
+st.markdown('<h1><i class="fas fa-globe"></i> Módulo de Predicción</h1>', unsafe_allow_html=True)
 st.markdown("### Introduce las características de un objeto de interés para clasificarlo")
 
 # Selector de modelos
@@ -96,7 +131,7 @@ with col1:
     st.markdown("Selecciona el modelo que deseas usar para realizar predicciones")
 with col2:
     model_options = [m['name'] for m in available_models]
-    selected_model_name = st.selectbox("🤖 Modelo", model_options, label_visibility="collapsed")
+    selected_model_name = st.selectbox("Modelo", model_options, label_visibility="collapsed")
 
 # Cargar el modelo seleccionado
 selected_model_data = next((m for m in available_models if m['name'] == selected_model_name), None)
@@ -104,7 +139,7 @@ selected_model_data = next((m for m in available_models if m['name'] == selected
 if selected_model_data and selected_model_data.get('file') != 'default':
     model, le, model_columns, imputation_values = load_custom_model(selected_model_data['model_file'])
     # Mostrar información del modelo personalizado
-    with st.expander("ℹ️ Información del Modelo Seleccionado"):
+    with st.expander("Información del Modelo Seleccionado"):
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("Algoritmo", selected_model_data.get('algorithm', 'N/A'))
@@ -116,7 +151,18 @@ if selected_model_data and selected_model_data.get('file') != 'default':
             st.metric("F1-Score", f"{selected_model_data.get('avg_f1', 0):.2%}")
 else:
     model, le, model_columns, imputation_values = load_default_artifacts()
-    st.info("Usando el modelo pre-entrenado por defecto. Entrena y guarda tus propios modelos en **Model Workshop** ⚙️")
+    # Mostrar información del modelo predeterminado
+    default_metrics = get_default_model_metrics()
+    with st.expander("Información del Modelo Seleccionado"):
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Algoritmo", default_metrics.get('algorithm', 'Random Forest'))
+        with col2:
+            st.metric("Accuracy", f"{default_metrics.get('accuracy', 0):.2%}")
+        with col3:
+            st.metric("Precision", f"{default_metrics.get('avg_precision', 0):.2%}")
+        with col4:
+            st.metric("F1-Score", f"{default_metrics.get('avg_f1', 0):.2%}")
 
 st.markdown("---")
 
@@ -124,66 +170,101 @@ if model is None:
     st.error("Error: Archivos del modelo no encontrados. Asegúrate de que la carpeta 'artifacts' con 'exoplanet_model.joblib' y 'final_dataset.csv' existe.")
 else:
     # Tabs para predicción individual y masiva
-    tab1, tab2 = st.tabs(["🔍 Predicción Individual", "📊 Predicción Masiva"])
+    tab1, tab2 = st.tabs(["Predicción Individual", "Predicción Masiva"])
 
     # ============= TAB 1: PREDICCIÓN INDIVIDUAL =============
     with tab1:
+        # Botón de dado para cargar valores aleatorios
+        col_header, col_button = st.columns([3, 1])
+        with col_header:
+            st.header("Parámetros del Objeto")
+        with col_button:
+            if st.button("🎲 Aleatorio", use_container_width=True, help="Cargar un registro aleatorio del dataset"):
+                # Cargar dataset y seleccionar fila aleatoria
+                df_sample = pd.read_csv('artifacts/final_dataset.csv')
+                random_row = df_sample.sample(n=1).iloc[0]
+
+                # Guardar valores en session_state
+                st.session_state['random_mission'] = random_row['mission']
+                st.session_state['random_orbital_period'] = float(random_row['orbital_period'])
+                st.session_state['random_planet_radius_earth'] = float(random_row['planet_radius_earth'])
+                st.session_state['random_planet_temp'] = int(random_row['planet_temp'])
+                st.session_state['random_planet_count_in_system'] = int(random_row['planet_count_in_system'])
+                st.session_state['random_transit_depth'] = float(random_row['transit_depth'])
+                st.session_state['random_transit_duration'] = float(random_row['transit_duration'])
+                st.session_state['random_impact_parameter'] = float(random_row['impact_parameter'])
+                st.session_state['random_stellar_temperature'] = int(random_row['stellar_temperature'])
+                st.session_state['random_stellar_radius'] = float(random_row['stellar_radius'])
+                st.session_state['random_stellar_mass'] = float(random_row['stellar_mass'])
+                st.session_state['random_stellar_logg'] = float(random_row['stellar_logg'])
+
+                # Valores de Kepler si aplica
+                if random_row['mission'] == 'Kepler':
+                    st.session_state['random_disposition_score'] = float(random_row['disposition_score'])
+                    st.session_state['random_signal_to_noise'] = float(random_row['signal_to_noise'])
+                    st.session_state['random_fp_flag_nt'] = int(random_row['fp_flag_nt'])
+                    st.session_state['random_fp_flag_ss'] = int(random_row['fp_flag_ss'])
+                    st.session_state['random_fp_flag_co'] = int(random_row['fp_flag_co'])
+                    st.session_state['random_fp_flag_ec'] = int(random_row['fp_flag_ec'])
+
+                st.rerun()
+
         params = {}
 
-        st.header("Parámetros del Objeto")
-
         # --- Fila 1: Parámetros Globales ---
-        st.subheader("✅ Características Globales")
+        st.markdown('<h3><i class="fas fa-check-circle"></i> Características Globales</h3>', unsafe_allow_html=True)
         st.caption("Comunes a todas las misiones espaciales")
         col1, col2, col3, col4, col5 = st.columns(5)
         with col1:
-            params['mission'] = st.selectbox("Misión de Origen", ["Kepler", "K2", "TESS"], help="Misión espacial que detectó el objeto")
+            mission_options = ["Kepler", "K2", "TESS"]
+            mission_index = mission_options.index(st.session_state.get('random_mission', 'Kepler')) if 'random_mission' in st.session_state else 0
+            params['mission'] = st.selectbox("Misión de Origen", mission_options, index=mission_index, help="Misión espacial que detectó el objeto")
         with col2:
-            params['orbital_period'] = st.number_input("Periodo Orbital (días)", min_value=0.0, value=10.5, format="%.4f", help="Tiempo que tarda en orbitar su estrella")
+            params['orbital_period'] = st.number_input("Periodo Orbital", min_value=0.0, value=st.session_state.get('random_orbital_period', 10.5), format="%.4f", help="Tiempo que tarda en orbitar su estrella (días)")
         with col3:
-            params['planet_radius_earth'] = st.number_input("Radio del Planeta (Radios 🌎)", min_value=0.0, value=1.6, help="Tamaño relativo a la Tierra")
+            params['planet_radius_earth'] = st.number_input("Radio del Planeta", min_value=0.0, value=st.session_state.get('random_planet_radius_earth', 1.6), help="Tamaño relativo a la Tierra (Radios ⊕)")
         with col4:
-            params['planet_temp'] = st.number_input("Temperatura (K)", min_value=0, value=1000, help="Temperatura estimada del planeta")
+            params['planet_temp'] = st.number_input("Temperatura", min_value=0, value=st.session_state.get('random_planet_temp', 1000), help="Temperatura estimada del planeta (K)")
         with col5:
-            params['planet_count_in_system'] = st.number_input("Planetas en Sistema", min_value=1, value=1, step=1, help="Número de planetas detectados en el sistema")
+            params['planet_count_in_system'] = st.number_input("Planetas en Sistema", min_value=1, value=st.session_state.get('random_planet_count_in_system', 1), step=1, help="Número de planetas detectados en el sistema")
 
         st.markdown("")  # Espaciado
 
         col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
         with col1:
-            params['transit_depth'] = st.number_input("Profundidad Tránsito (ppm)", min_value=0.0, value=500.0, help="Caída de brillo durante el tránsito")
+            params['transit_depth'] = st.number_input("Profundidad Tránsito", min_value=0.0, value=st.session_state.get('random_transit_depth', 500.0), help="Caída de brillo durante el tránsito (ppm)")
         with col2:
-            params['transit_duration'] = st.number_input("Duración Tránsito (horas)", min_value=0.0, value=3.5, help="Duración del tránsito")
+            params['transit_duration'] = st.number_input("Duración Tránsito", min_value=0.0, value=st.session_state.get('random_transit_duration', 3.5), help="Duración del tránsito (horas)")
         with col3:
-            params['impact_parameter'] = st.slider("Parámetro de Impacto", 0.0, 2.0, 0.5, 0.01, help="Geometría del tránsito (0=central)")
+            params['impact_parameter'] = st.slider("Parámetro de Impacto", 0.0, 2.0, st.session_state.get('random_impact_parameter', 0.5), 0.01, help="Geometría del tránsito (0=central)")
         with col4:
-            params['stellar_temperature'] = st.number_input("Temp. Estrella (K)", min_value=2000, value=5778, help="Temperatura de la estrella anfitriona")
+            params['stellar_temperature'] = st.number_input("Temp. Estrella", min_value=2000, value=st.session_state.get('random_stellar_temperature', 5778), help="Temperatura de la estrella anfitriona (K)")
         with col5:
-            params['stellar_radius'] = st.number_input("Radio Estrella (Radios ☀️)", min_value=0.0, value=1.0, help="Tamaño relativo al Sol")
+            params['stellar_radius'] = st.number_input("Radio Estrella", min_value=0.0, value=st.session_state.get('random_stellar_radius', 1.0), help="Tamaño relativo al Sol (Radios ☉)")
         with col6:
-            params['stellar_mass'] = st.number_input("Masa Estrella (Masas ☀️)", min_value=0.0, value=1.0, help="Masa relativa al Sol")
+            params['stellar_mass'] = st.number_input("Masa Estrella", min_value=0.0, value=st.session_state.get('random_stellar_mass', 1.0), help="Masa relativa al Sol (Masas ☉)")
         with col7:
-            params['stellar_logg'] = st.number_input("Gravedad Estelar (log g)", min_value=0.0, value=4.4, help="Gravedad superficial de la estrella")
+            params['stellar_logg'] = st.number_input("Gravedad Estelar", min_value=0.0, value=st.session_state.get('random_stellar_logg', 4.4), help="Gravedad superficial de la estrella (log g)")
 
         st.divider()
 
         # --- Fila 2: Características No Comunes ---
-        st.subheader("🛰️ Características No Comunes (se habilitan según la misión)")
+        st.markdown('<h3><i class="fas fa-satellite"></i> Características No Comunes (se habilitan según la misión)</h3>', unsafe_allow_html=True)
         if params['mission'] == 'Kepler':
             st.info("Estas características de diagnóstico solo están disponibles para la misión Kepler y mejoran significativamente la predicción.")
             k_col1, k_col2, k_col3, k_col4, k_col5, k_col6 = st.columns(6)
             with k_col1:
-                params['disposition_score'] = st.slider("Score de Disposición", 0.0, 1.0, 0.95, 0.01)
+                params['disposition_score'] = st.slider("Score de Disposición", 0.0, 1.0, st.session_state.get('random_disposition_score', 0.95), 0.01, help="Score de disposición (0.0-1.0)")
             with k_col2:
-                params['signal_to_noise'] = st.number_input("Señal-Ruido (SNR)", min_value=0.0, value=50.0)
+                params['signal_to_noise'] = st.number_input("Señal-Ruido", min_value=0.0, value=st.session_state.get('random_signal_to_noise', 50.0), help="Relación señal-ruido (SNR)")
             with k_col3:
-                params['fp_flag_nt'] = st.selectbox("Flag NT", [0, 1], help="Not Transit-Like Flag")
+                params['fp_flag_nt'] = st.selectbox("Flag NT", [0, 1], index=st.session_state.get('random_fp_flag_nt', 0), help="Not Transit-Like Flag")
             with k_col4:
-                params['fp_flag_ss'] = st.selectbox("Flag SS", [0, 1], help="Stellar Eclipse Flag")
+                params['fp_flag_ss'] = st.selectbox("Flag SS", [0, 1], index=st.session_state.get('random_fp_flag_ss', 0), help="Stellar Eclipse Flag")
             with k_col5:
-                params['fp_flag_co'] = st.selectbox("Flag CO", [0, 1], help="Centroid Offset Flag")
+                params['fp_flag_co'] = st.selectbox("Flag CO", [0, 1], index=st.session_state.get('random_fp_flag_co', 0), help="Centroid Offset Flag")
             with k_col6:
-                params['fp_flag_ec'] = st.selectbox("Flag EC", [0, 1], help="Ephemeris Contamination Flag")
+                params['fp_flag_ec'] = st.selectbox("Flag EC", [0, 1], index=st.session_state.get('random_fp_flag_ec', 0), help="Ephemeris Contamination Flag")
         else:
             st.warning(f"La misión '{params['mission']}' no proporciona estas características de diagnóstico. Se utilizarán valores neutros para la predicción.")
 
@@ -192,7 +273,7 @@ else:
         # Botón de predicción centrado
         st.markdown("")  # Espaciado
         _, center_col, _ = st.columns([1.5, 1, 1.5])
-        if center_col.button("🚀 Clasificar Objeto", use_container_width=True, type="primary"):
+        if center_col.button("Clasificar Objeto", use_container_width=True, type="primary"):
             # Preparar datos
             input_df = prepare_input_data(params, model_columns, imputation_values)
 
@@ -202,7 +283,7 @@ else:
 
             # Mostrar Resultado con diseño mejorado
             st.markdown("---")
-            st.header("📊 Resultado de la Clasificación")
+            st.markdown('<h2><i class="fas fa-chart-pie"></i> Resultado de la Clasificación</h2>', unsafe_allow_html=True)
             st.markdown("")
 
             # Resultado principal con métricas grandes
@@ -210,8 +291,8 @@ else:
 
             with col2:
                 if prediction_label == 'CONFIRMED':
-                    st.success("### ✅ EXOPLANETA CONFIRMADO")
-                    st.markdown("## 🪐")
+                    st.success("### EXOPLANETA CONFIRMADO")
+                    st.markdown('<h1 style="text-align: center;"><i class="fas fa-globe"></i></h1>', unsafe_allow_html=True)
                     confidence = prediction_proba[0][list(le.classes_).index(prediction_label)]
                     st.metric(
                         label="Nivel de Confianza",
@@ -219,8 +300,8 @@ else:
                         delta="Alta certeza" if confidence > 0.8 else "Certeza moderada"
                     )
                 elif prediction_label == 'CANDIDATE':
-                    st.info("### 🔍 CANDIDATO A EXOPLANETA")
-                    st.markdown("## 🔭")
+                    st.info("### CANDIDATO A EXOPLANETA")
+                    st.markdown('<h1 style="text-align: center;"><i class="fas fa-search"></i></h1>', unsafe_allow_html=True)
                     confidence = prediction_proba[0][list(le.classes_).index(prediction_label)]
                     st.metric(
                         label="Nivel de Confianza",
@@ -228,8 +309,8 @@ else:
                         delta="Requiere confirmación"
                     )
                 else:
-                    st.error("### ❌ FALSO POSITIVO")
-                    st.markdown("## 🌟")
+                    st.error("### FALSO POSITIVO")
+                    st.markdown('<h1 style="text-align: center;"><i class="fas fa-star"></i></h1>', unsafe_allow_html=True)
                     confidence = prediction_proba[0][list(le.classes_).index(prediction_label)]
                     st.metric(
                         label="Nivel de Confianza",
@@ -240,7 +321,7 @@ else:
             st.markdown("---")
 
             # Distribución de probabilidades con gráfico
-            st.subheader("📈 Distribución de Probabilidades")
+            st.markdown('<h3><i class="fas fa-chart-bar"></i> Distribución de Probabilidades</h3>', unsafe_allow_html=True)
 
             col1, col2 = st.columns([1, 1])
 
@@ -287,7 +368,7 @@ else:
 
             # XAI: Feature Importance para esta predicción
             st.markdown("---")
-            st.subheader("🧠 Explicabilidad: ¿Por qué esta predicción?")
+            st.markdown('<h3><i class="fas fa-brain"></i> Explicabilidad: ¿Por qué esta predicción?</h3>', unsafe_allow_html=True)
 
             if hasattr(model, 'feature_importances_'):
                 st.markdown("**Contribución de Features a la Predicción**")
@@ -338,7 +419,7 @@ else:
 
             # Interpretación del resultado
             st.markdown("---")
-            with st.expander("💡 ¿Cómo interpretar estos resultados?"):
+            with st.expander("¿Cómo interpretar estos resultados?"):
                 st.markdown("""
                 **CONFIRMED (Confirmado):** El objeto ha sido verificado como un exoplaneta real con alta confianza.
 
@@ -354,7 +435,7 @@ else:
 
     # ============= TAB 2: PREDICCIÓN MASIVA =============
     with tab2:
-        st.header("📊 Predicción Masiva de Exoplanetas")
+        st.markdown('<h2><i class="fas fa-chart-pie"></i> Predicción Masiva de Exoplanetas</h2>', unsafe_allow_html=True)
         st.markdown("Sube un archivo CSV con múltiples candidatos para clasificarlos en lote")
 
         # Upload CSV
@@ -365,10 +446,10 @@ else:
                 # Leer CSV
                 df_batch = pd.read_csv(uploaded_file)
 
-                st.success(f"✅ Archivo cargado: {len(df_batch)} registros detectados")
+                st.success(f"Archivo cargado: {len(df_batch)} registros detectados")
 
                 # Mostrar preview
-                with st.expander("👁️ Vista Previa de los Datos"):
+                with st.expander("Vista Previa de los Datos"):
                     st.dataframe(df_batch.head(10), use_container_width=True)
 
                 # Validar columnas necesarias
@@ -376,10 +457,10 @@ else:
                 missing_cols = [col for col in required_base_cols if col not in df_batch.columns]
 
                 if missing_cols:
-                    st.error(f"❌ Faltan columnas requeridas: {', '.join(missing_cols)}")
+                    st.error(f"Faltan columnas requeridas: {', '.join(missing_cols)}")
                 else:
-                    if st.button("🚀 Realizar Predicciones Masivas", type="primary", use_container_width=True):
-                        with st.spinner("🔄 Procesando predicciones... Esto puede tardar un momento."):
+                    if st.button("Realizar Predicciones Masivas", type="primary", use_container_width=True):
+                        with st.spinner("Procesando predicciones... Esto puede tardar un momento."):
                             # Preparar datos para predicción
                             df_processed = df_batch.copy()
 
@@ -416,11 +497,11 @@ else:
                             for i, class_name in enumerate(le.classes_):
                                 results_df[f'Prob_{class_name}'] = predictions_proba[:, i]
 
-                        st.success(f"✅ ¡Predicciones completadas! {len(results_df)} objetos clasificados")
+                        st.success(f"¡Predicciones completadas! {len(results_df)} objetos clasificados")
 
                         # Dashboard de Resultados
                         st.markdown("---")
-                        st.header("📊 Dashboard de Resultados")
+                        st.markdown('<h2><i class="fas fa-tachometer-alt"></i> Dashboard de Resultados</h2>', unsafe_allow_html=True)
 
                         # Métricas generales
                         col1, col2, col3, col4 = st.columns(4)
@@ -503,7 +584,7 @@ else:
                             st.plotly_chart(fig_hist, use_container_width=True)
 
                         # Box plot de probabilidades
-                        st.subheader("📦 Distribución de Probabilidades por Clase Predicha")
+                        st.markdown('<h3><i class="fas fa-box"></i> Distribución de Probabilidades por Clase Predicha</h3>', unsafe_allow_html=True)
 
                         prob_data = []
                         for pred in le.classes_:
@@ -534,7 +615,7 @@ else:
                         st.markdown("---")
 
                         # Tabla de resultados interactiva
-                        st.subheader("📋 Tabla de Resultados Completa")
+                        st.markdown('<h3><i class="fas fa-table"></i> Tabla de Resultados Completa</h3>', unsafe_allow_html=True)
 
                         # Filtros
                         col1, col2 = st.columns(2)
@@ -577,12 +658,12 @@ else:
 
                         # Opción de descarga
                         st.markdown("---")
-                        st.subheader("💾 Exportar Resultados")
+                        st.markdown('<h3><i class="fas fa-download"></i> Exportar Resultados</h3>', unsafe_allow_html=True)
 
                         csv = results_df.to_csv(index=False).encode('utf-8')
 
                         st.download_button(
-                            label="📥 Descargar Resultados en CSV",
+                            label="Descargar Resultados en CSV",
                             data=csv,
                             file_name=f'predicciones_exoplanetas_{pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")}.csv',
                             mime='text/csv',
@@ -592,7 +673,7 @@ else:
                         # Si hay columna 'disposition' real en el CSV, hacer comparación
                         if 'disposition' in df_batch.columns:
                             st.markdown("---")
-                            st.subheader("🎯 Comparación con Ground Truth")
+                            st.markdown('<h3><i class="fas fa-crosshairs"></i> Comparación con Ground Truth</h3>', unsafe_allow_html=True)
                             st.markdown("Se detectó una columna 'disposition' en tu CSV. Comparando predicciones con valores reales...")
 
                             from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
@@ -636,5 +717,5 @@ else:
                             st.plotly_chart(fig_cm, use_container_width=True)
 
             except Exception as e:
-                st.error(f"❌ Error al procesar el archivo: {str(e)}")
+                st.error(f"Error al procesar el archivo: {str(e)}")
                 st.info("Asegúrate de que el CSV tiene el formato correcto y las columnas necesarias")

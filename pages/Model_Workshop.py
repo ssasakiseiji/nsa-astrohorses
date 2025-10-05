@@ -15,7 +15,12 @@ import json
 import os
 from datetime import datetime
 
-st.set_page_config(page_title="Model Workshop", page_icon="⚙️", layout="wide")
+st.set_page_config(page_title="Model Workshop", page_icon="", layout="wide")
+
+# Cargar Font Awesome
+st.markdown("""
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+""", unsafe_allow_html=True)
 
 @st.cache_data
 def load_data():
@@ -27,7 +32,7 @@ def load_data():
 
 df = load_data()
 
-st.title("⚙️ Taller de Modelos (Model Workshop)")
+st.markdown('<h1><i class="fas fa-cog"></i> Taller de Modelos (Model Workshop)</h1>', unsafe_allow_html=True)
 st.markdown("### Entrena y evalúa tus propios modelos de clasificación")
 st.markdown("Ajusta los hiperparámetros en la barra lateral, entrena y evalúa el rendimiento con visualizaciones en tiempo real.")
 st.markdown("---")
@@ -36,7 +41,7 @@ if df is None:
     st.error("Dataset no encontrado. Asegúrate de que 'final_dataset.csv' está en la carpeta 'artifacts'.")
 else:
     # Mostrar información del dataset
-    st.subheader("📊 Información del Dataset")
+    st.markdown('<h3><i class="fas fa-database"></i> Información del Dataset</h3>', unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
@@ -49,7 +54,7 @@ else:
         st.metric("Misiones", df['mission'].nunique())
 
     # Distribución de clases
-    with st.expander("📈 Ver Distribución de Clases"):
+    with st.expander("Ver Distribución de Clases"):
         class_counts = df['disposition'].value_counts()
 
         col1, col2 = st.columns([1, 1])
@@ -79,7 +84,7 @@ else:
     st.markdown("---")
 
     # Configuración del Entrenamiento en el componente principal
-    st.subheader("⚙️ Configuración del Entrenamiento")
+    st.markdown('<h3><i class="fas fa-sliders-h"></i> Configuración del Entrenamiento</h3>', unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
     with col1:
@@ -87,7 +92,7 @@ else:
     with col2:
         algorithm = st.selectbox("Algoritmo", ["RandomForest", "LightGBM"], help="Selecciona el algoritmo de ML")
 
-    st.markdown("#### 🎛️ Ajuste de Hiperparámetros")
+    st.markdown('<h4><i class="fas fa-sliders-h"></i> Ajuste de Hiperparámetros</h4>', unsafe_allow_html=True)
     params = {}
     if algorithm == "RandomForest":
         st.markdown("**Parámetros de Estructura del Árbol**")
@@ -143,11 +148,11 @@ else:
 
     st.markdown("---")
 
-    if st.button("🚀 Entrenar Modelo", type="primary", use_container_width=True):
-        st.header(f"📊 Resultados para: {model_name}")
+    if st.button("Entrenar Modelo", type="primary", use_container_width=True):
+        st.markdown(f'<h2><i class="fas fa-chart-bar"></i> Resultados para: {model_name}</h2>', unsafe_allow_html=True)
         st.markdown("---")
 
-        with st.spinner("🔄 Preparando datos y entrenando el modelo... Esto puede tardar unos segundos."):
+        with st.spinner("Preparando datos y entrenando el modelo... Esto puede tardar unos segundos."):
             model_df = df.copy()
             le = LabelEncoder().fit(model_df['disposition'])
             model_df['disposition'] = le.transform(model_df['disposition'])
@@ -184,10 +189,10 @@ else:
             st.session_state['algorithm'] = algorithm
             st.session_state['params'] = params
 
-        st.success(f"✅ ¡Entrenamiento completado con éxito!")
+        st.success(f"¡Entrenamiento completado con éxito!")
 
         # Métricas principales destacadas
-        st.subheader("🎯 Métricas Principales")
+        st.markdown('<h3><i class="fas fa-chart-line"></i> Métricas Principales</h3>', unsafe_allow_html=True)
         col1, col2, col3, col4 = st.columns(4)
 
         with col1:
@@ -231,7 +236,7 @@ else:
 
         with col1:
             # Matriz de confusión
-            st.subheader("📊 Matriz de Confusión")
+            st.markdown('<h4><i class="fas fa-th"></i> Matriz de Confusión</h4>', unsafe_allow_html=True)
 
             fig_cm = go.Figure(data=go.Heatmap(
                 z=cm,
@@ -255,7 +260,7 @@ else:
 
         with col2:
             # Métricas por clase
-            st.subheader("📈 Métricas por Clase")
+            st.markdown('<h4><i class="fas fa-chart-bar"></i> Métricas por Clase</h4>', unsafe_allow_html=True)
 
             # Extraer métricas de cada clase
             classes = le.classes_
@@ -310,7 +315,7 @@ else:
         st.markdown("---")
 
         # Feature Importance
-        st.subheader("🎯 Importancia de Features (Feature Importance)")
+        st.markdown('<h3><i class="fas fa-star"></i> Importancia de Features (Feature Importance)</h3>', unsafe_allow_html=True)
         st.markdown("Muestra qué características tienen mayor impacto en las predicciones del modelo")
 
         if hasattr(model, 'feature_importances_'):
@@ -346,7 +351,7 @@ else:
         st.markdown("---")
 
         # ROC Curves
-        st.subheader("📈 Curvas ROC Multi-clase")
+        st.markdown('<h3><i class="fas fa-chart-area"></i> Curvas ROC Multi-clase</h3>', unsafe_allow_html=True)
         st.markdown("Evalúa la capacidad del modelo para distinguir entre clases")
 
         col1, col2 = st.columns(2)
@@ -420,7 +425,7 @@ else:
         st.markdown("---")
 
         # Análisis de errores
-        st.subheader("🔍 Análisis de Errores del Modelo")
+        st.markdown('<h3><i class="fas fa-exclamation-triangle"></i> Análisis de Errores del Modelo</h3>', unsafe_allow_html=True)
         st.markdown("Identifica dónde y por qué el modelo comete errores")
 
         errors_df = pd.DataFrame({
@@ -478,12 +483,12 @@ else:
                     hide_index=True
                 )
             else:
-                st.success("¡No hay errores! Modelo perfecto en test set 🎉")
+                st.success("¡No hay errores! Modelo perfecto en test set")
 
         st.markdown("---")
 
         # Tabla detallada del reporte
-        st.subheader("📋 Reporte de Clasificación Detallado")
+        st.markdown('<h3><i class="fas fa-clipboard-list"></i> Reporte de Clasificación Detallado</h3>', unsafe_allow_html=True)
         report_df = pd.DataFrame(report).transpose()
         st.dataframe(
             report_df.style.format("{:.3f}").background_gradient(cmap='RdYlGn', subset=['precision', 'recall', 'f1-score']),
@@ -492,7 +497,7 @@ else:
 
         # Interpretación
         st.markdown("---")
-        with st.expander("💡 ¿Cómo interpretar estas métricas?"):
+        with st.expander("¿Cómo interpretar estas métricas?"):
             st.markdown(f"""
             ### Métricas de Rendimiento
 
@@ -521,7 +526,7 @@ else:
     # Opción para guardar modelo si ya hay uno entrenado en session_state
     if 'trained_model' in st.session_state:
         st.markdown("---")
-        st.subheader("💾 Guardar Modelo Entrenado")
+        st.markdown('<h3><i class="fas fa-save"></i> Guardar Modelo Entrenado</h3>', unsafe_allow_html=True)
         st.markdown("Guarda el último modelo entrenado para usarlo en el módulo de Predicción")
 
         col1, col2 = st.columns([2, 1])
@@ -529,7 +534,7 @@ else:
             st.info(f"**Modelo:** {st.session_state['model_name']} | **Algoritmo:** {st.session_state['algorithm']} | **Accuracy:** {st.session_state['trained_accuracy']:.2%}")
 
         with col2:
-            if st.button("💾 Guardar en Predictor", type="secondary", use_container_width=True, key="save_trained"):
+            if st.button("Guardar en Predictor", type="secondary", use_container_width=True, key="save_trained"):
                 try:
                     # Crear directorio de modelos si no existe
                     os.makedirs('artifacts/saved_models', exist_ok=True)
@@ -583,9 +588,9 @@ else:
                     with open(index_path, 'w') as f:
                         json.dump(models_index, f, indent=2)
 
-                    st.success(f"✅ ¡Modelo guardado exitosamente como '{st.session_state['model_name']}'!")
+                    st.success(f"¡Modelo guardado exitosamente como '{st.session_state['model_name']}'!")
                     st.balloons()
-                    st.info("Ahora puedes usar este modelo en el Módulo de Predicción 🪐")
+                    st.info("Ahora puedes usar este modelo en el Módulo de Predicción")
 
                 except Exception as e:
-                    st.error(f"❌ Error al guardar el modelo: {str(e)}")
+                    st.error(f"Error al guardar el modelo: {str(e)}")
