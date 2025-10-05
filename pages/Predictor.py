@@ -9,10 +9,16 @@ import plotly.graph_objects as go
 import plotly.express as px
 import json
 import os
+import sys
+sys.path.append('..')
+from sidebar_config import setup_sidebar
 
 st.set_page_config(page_title="Predictor de Exoplanetas", page_icon="", layout="wide")
 
-# Cargar Font Awesome
+# Configurar sidebar consistente
+setup_sidebar()
+
+# Font Awesome para iconos
 st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 """, unsafe_allow_html=True)
@@ -179,7 +185,7 @@ else:
         with col_header:
             st.header("Parámetros del Objeto")
         with col_button:
-            if st.button("🎲 Aleatorio", use_container_width=True, help="Cargar un registro aleatorio del dataset"):
+            if st.button("Aleatorio", use_container_width=True, help="Cargar un registro aleatorio del dataset"):
                 # Cargar dataset y seleccionar fila aleatoria
                 df_sample = pd.read_csv('artifacts/final_dataset.csv')
                 random_row = df_sample.sample(n=1).iloc[0]

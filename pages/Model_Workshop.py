@@ -14,10 +14,16 @@ import joblib
 import json
 import os
 from datetime import datetime
+import sys
+sys.path.append('..')
+from sidebar_config import setup_sidebar, show_model_manager
 
 st.set_page_config(page_title="Model Workshop", page_icon="", layout="wide")
 
-# Cargar Font Awesome
+# Configurar sidebar consistente
+setup_sidebar()
+
+# Font Awesome para iconos
 st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 """, unsafe_allow_html=True)
@@ -35,6 +41,10 @@ df = load_data()
 st.markdown('<h1><i class="fas fa-cog"></i> Taller de Modelos (Model Workshop)</h1>', unsafe_allow_html=True)
 st.markdown("### Entrena y evalúa tus propios modelos de clasificación")
 st.markdown("Ajusta los hiperparámetros en la barra lateral, entrena y evalúa el rendimiento con visualizaciones en tiempo real.")
+
+# Componente de administración de modelos
+show_model_manager()
+
 st.markdown("---")
 
 if df is None:
